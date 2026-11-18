@@ -1,0 +1,737 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Missione Luxia</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2212%22 fill=%22%23FFC857%22/%3E%3C/svg%3E">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: one-screen app. Player = phone column; #host = projector board (path + crew list); #admin = question editor. Single deliberate deep-space look. */
+:root{
+  --void:#060918; --nebula:#10163A; --panel:#161E4A; --panel2:#1E2860; --line:#2E3A7A;
+  --ink:#EEF1FF; --dim:#9AA3D1; --luce:#FFC857; --ion:#6EE7F9; --detour:#FF6B6B; --ok:#7CF29A;
+  --f-display:"Chakra Petch", "Trebuchet MS", sans-serif;
+  --f-body:"Manrope", system-ui, -apple-system, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;overflow-x:hidden}
+.sky{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(110,231,249,.10), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(255,200,87,.09), transparent 60%),
+    var(--void)}
+.sky::before,.sky::after{content:"";position:absolute;inset:0;background-repeat:repeat}
+.sky::before{background-image:
+  radial-gradient(1px 1px at 20px 30px,#fff 50%,transparent 51%),
+  radial-gradient(1px 1px at 140px 90px,#cfd6ff 50%,transparent 51%),
+  radial-gradient(1.5px 1.5px at 80px 160px,#fff 50%,transparent 51%),
+  radial-gradient(1px 1px at 190px 200px,#fff 50%,transparent 51%);
+  background-size:220px 220px;opacity:.55}
+.sky::after{background-image:
+  radial-gradient(1.5px 1.5px at 60px 50px,#FFE3A3 50%,transparent 51%),
+  radial-gradient(1px 1px at 260px 140px,#fff 50%,transparent 51%),
+  radial-gradient(2px 2px at 330px 300px,#B9F4FF 50%,transparent 51%);
+  background-size:380px 380px;opacity:.5;animation:twinkle 6s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.25}to{opacity:.7}}
+#app{position:relative;z-index:1;height:100%}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ion)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--ion);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:999px;font-weight:800;
+  background:var(--luce);color:#1A1300;box-shadow:0 0 0 0 rgba(255,200,87,.5);transition:transform .15s, box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 30px -6px rgba(255,200,87,.6)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ion);box-shadow:none}
+.btn.danger{background:transparent;color:var(--detour);border:1px solid rgba(255,107,107,.5)}
+.btn.sm{padding:8px 14px;font-size:14px}
+input[type=text],input[type=number],textarea,select{width:100%;box-sizing:border-box;background:var(--nebula);color:var(--ink);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;font:inherit}
+textarea{resize:vertical}
+
+/* ---------- Player (phone) ---------- */
+.phone{min-height:100%;box-sizing:border-box;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:20px;
+  padding-block:24px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand .logo{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.06em}
+.brand .logo b{color:var(--luce)}
+.card{background:linear-gradient(180deg,var(--panel),var(--nebula));border:1px solid var(--line);border-radius:22px;padding:22px}
+.center{text-align:center}
+.astro-hero{display:flex;justify-content:center;padding:6px 0}
+.astro-hero svg{width:130px;height:auto;filter:drop-shadow(0 10px 30px rgba(110,231,249,.25));animation:float 4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.sw{width:40px;height:40px;border-radius:50%;border:3px solid transparent;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.sw[aria-pressed=true]{border-color:var(--ink)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.label{font-size:13px;color:var(--dim);font-weight:600}
+.status{display:flex;align-items:center;gap:12px}
+.status .who{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.status .who span{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{width:34px;height:auto;flex:none}
+.track{height:10px;border-radius:999px;background:var(--nebula);border:1px solid var(--line);overflow:hidden}
+.track i{display:block;height:100%;background:linear-gradient(90deg,var(--ion),var(--luce));border-radius:999px;transition:width .6s}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;font-family:var(--f-mono);letter-spacing:.04em}
+.pill.detour{background:rgba(255,107,107,.15);color:var(--detour);border:1px solid rgba(255,107,107,.4)}
+.pill.main{background:rgba(110,231,249,.12);color:var(--ion);border:1px solid rgba(110,231,249,.35)}
+.pill.done{background:rgba(255,200,87,.15);color:var(--luce);border:1px solid rgba(255,200,87,.4)}
+.question{font-family:var(--f-display);font-size:24px;line-height:1.25;font-weight:700}
+.answers{display:grid;gap:12px}
+.ans{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);font-weight:600;font-size:17px;transition:transform .1s,border-color .2s}
+.ans:active{transform:scale(.98)}
+.ans .k{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;background:var(--nebula);color:var(--ion)}
+.ans.right{border-color:var(--ok);background:rgba(124,242,154,.14)}
+.ans.wrong{border-color:var(--detour);background:rgba(255,107,107,.14)}
+.ans:disabled{cursor:default}
+.fb{border-radius:16px;padding:14px 16px;font-weight:800;display:flex;align-items:center;gap:10px}
+.fb.ok{background:rgba(124,242,154,.12);color:var(--ok)}
+.fb.ko{background:rgba(255,107,107,.12);color:var(--detour)}
+.big-count{font-family:var(--f-display);font-size:96px;font-weight:700;color:var(--luce);line-height:1;text-shadow:0 0 40px rgba(255,200,87,.5)}
+.muted{color:var(--dim)}
+.editnav{display:flex;gap:6px;flex-wrap:wrap}
+.editnav a{font-size:12px;font-family:var(--f-mono);color:var(--dim);text-decoration:none;padding:4px 8px;border:1px solid var(--line);border-radius:8px}
+.editnav a:hover{color:var(--ink);border-color:var(--ion)}
+
+/* ---------- Host (projector) ---------- */
+.host{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0}
+.host-main{position:relative;display:flex;flex-direction:column;min-width:0;padding-block:20px;padding-left:max(24px, env(safe-area-inset-left, 0px));padding-right:16px}
+.host-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.host-top h1{font-size:32px}
+.host-top h1 b{color:var(--luce)}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap}
+.board{flex:1;min-height:0;width:100%}
+.board svg{width:100%;height:100%;display:block}
+.side{border-left:1px solid var(--line);background:rgba(16,22,58,.7);backdrop-filter:blur(6px);display:flex;flex-direction:column;min-height:0;
+  padding-block:20px;padding-left:18px;padding-right:max(18px, env(safe-area-inset-right, 0px))}
+.side h2{font-size:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+.crew{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0;flex:1}
+.crew li{display:grid;grid-template-columns:28px 34px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:rgba(30,40,96,.5)}
+.crew li .rk{font-family:var(--f-mono);font-weight:700;color:var(--dim);text-align:center}
+.crew li:nth-child(1) .rk{color:var(--luce)}
+.crew li .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crew li .pr{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+.side .qr-mini{margin-top:14px;display:flex;gap:12px;align-items:center;font-size:13px;color:var(--dim)}
+.side .qr-mini .qr{background:#fff;padding:6px;border-radius:10px;width:84px;height:84px;flex:none}
+.qr img,.qr canvas{width:100%!important;height:100%!important;display:block}
+.pl{transition:transform 1.1s cubic-bezier(.55,0,.2,1)}
+.bob{animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,9,24,.72);z-index:5;text-align:center}
+.overlay .big-count{font-size:220px}
+.banner{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:4;background:linear-gradient(90deg,rgba(255,200,87,.95),rgba(255,226,150,.95));color:#1A1300;
+  padding:12px 26px;border-radius:999px;font-family:var(--f-display);font-weight:700;font-size:24px;box-shadow:0 10px 50px -10px rgba(255,200,87,.8);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+
+/* Lobby */
+.lobby{height:100%;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:48px;align-items:center;
+  padding-block:32px;padding-left:max(48px, env(safe-area-inset-left, 0px));padding-right:max(48px, env(safe-area-inset-right, 0px))}
+.lobby .qr-big{background:#fff;padding:18px;border-radius:24px;width:min(42vh,380px);aspect-ratio:1;max-width:100%;box-shadow:0 0 80px -10px rgba(110,231,249,.5)}
+.lobby h1{font-size:clamp(40px,6vw,84px);line-height:.95}
+.lobby h1 b{color:var(--luce)}
+.lobby .url{font-family:var(--f-mono);font-size:14px;color:var(--dim);margin-top:14px;word-break:break-all}
+.joined{display:flex;flex-wrap:wrap;gap:14px 10px;margin-top:22px;max-height:46vh;overflow:auto}
+.joined .j{display:flex;flex-direction:column;align-items:center;width:86px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+.joined .j svg{width:54px;height:auto;animation:float 4s ease-in-out infinite}
+.joined .j span{font-size:13px;font-weight:700;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.count{font-family:var(--f-display);font-size:28px;margin-top:18px}
+.count b{color:var(--ion)}
+
+/* Podium */
+.podium{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding-block:24px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.podium h1{font-size:clamp(36px,5vw,64px)}
+.steps{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;justify-content:center}
+.step{display:flex;flex-direction:column;align-items:center;gap:8px;width:180px}
+.step svg{width:90px;height:auto;animation:float 4s ease-in-out infinite}
+.step .blk{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(180deg,var(--panel2),var(--nebula));border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-size:42px;font-weight:700}
+.step.p1 .blk{height:180px;color:var(--luce);border-color:rgba(255,200,87,.6)}
+.step.p2 .blk{height:130px;color:var(--ion)}
+.step.p3 .blk{height:96px;color:var(--dim)}
+.step .nm{font-weight:800;font-size:20px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Admin */
+.admin{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-block:28px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.admin h1{font-size:32px}
+.qedit{display:flex;flex-direction:column;gap:10px}
+.qedit .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:8px}
+.opt input[type=radio]{accent-color:var(--ok);width:20px;height:20px;flex:none}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ion);padding:10px 18px;border-radius:999px;z-index:20;font-weight:700}
+@media (max-width:900px){
+  .host{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;height:auto;min-height:100%}
+  .host-main{padding-left:max(16px, env(safe-area-inset-left, 0px))}
+  .board{min-height:60vw}
+  .side{border-left:0;border-top:1px solid var(--line);max-height:none}
+  .lobby{grid-template-columns:1fr;height:auto;gap:24px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  .lobby .qr-big{width:min(80vw,320px)}
+  .overlay .big-count{font-size:120px}
+  .banner{font-size:16px;top:70px}
+}
+@media (max-width:560px){ .qedit .opts,.settings{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+</style>
+
+<div class="sky"></div>
+<div id="app"></div>
+
+<script>
+// Link del QR: questa stessa pagina (GitHub Pages)
+const JOIN_URL = location.origin + location.pathname;
+const API = String(window.GAME_API || "").trim();
+const DEFAULTS = { status: "lobby", round: 1, mainLen: 12, detourLen: 3, penaltySec: 3, startedAt: 0 };
+const COLORS = ["#FFC857", "#6EE7F9", "#FF7AB6", "#9B8CFF", "#7CF29A", "#FF8A4C", "#4DA3FF", "#F25C54", "#E9EEFF", "#C6F35B"];
+const NS = "http://www.w3.org/2000/svg";
+const $app = document.getElementById("app");
+
+let uid = null, isEditor = false, PIN = "", lastSave = 0;
+let S = { ...DEFAULTS }, stateLoaded = false, Q = [], qLoaded = false;
+let players = new Map(), playersLoaded = false;
+let local = null;        // this viewer's player doc (authoritative locally)
+let resetDoneRound = 0;
+let screenKey = "";
+let busy = false, phase = "q", lastPick = -1, lastOk = false, penaltyUntil = 0;
+let draft = null;        // admin draft of questions
+let joinColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+let connNote = "";
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const route = () => (location.hash || "").replace("#", "") || "play";
+
+function astro(color, cls = "") {
+  return `<svg class="${cls}" viewBox="0 0 64 76" aria-hidden="true">
+    <rect x="13" y="28" width="38" height="26" rx="9" fill="#AEB8E6"/>
+    <rect x="6" y="34" width="14" height="9" rx="4.5" fill="#E6EAFF" transform="rotate(-18 13 38)"/>
+    <rect x="44" y="34" width="14" height="9" rx="4.5" fill="#E6EAFF" transform="rotate(18 51 38)"/>
+    <rect x="18" y="30" width="28" height="28" rx="11" fill="#F4F6FF"/>
+    <rect x="18" y="41" width="28" height="5" fill="${color}"/>
+    <rect x="22" y="54" width="9" height="15" rx="4" fill="#E6EAFF"/>
+    <rect x="33" y="54" width="9" height="15" rx="4" fill="#E6EAFF"/>
+    <rect x="21" y="65" width="11" height="6" rx="3" fill="#6B76B5"/>
+    <rect x="32" y="65" width="11" height="6" rx="3" fill="#6B76B5"/>
+    <line x1="44" y1="9" x2="48" y2="1" stroke="#E6EAFF" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="48" cy="1.5" r="2.2" fill="${color}"/>
+    <circle cx="32" cy="21" r="17" fill="#F4F6FF"/>
+    <ellipse cx="33" cy="22" rx="12.5" ry="9.5" fill="${color}"/>
+    <ellipse cx="33" cy="22" rx="12.5" ry="9.5" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="1.2"/>
+    <ellipse cx="28" cy="18.5" rx="4.5" ry="2.6" fill="#fff" opacity=".65"/>
+  </svg>`;
+}
+
+// ---------- helpers ----------
+function hash(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function shuffled(n, seed) {
+  const a = [...Array(n).keys()]; let s = seed || 1;
+  for (let i = n - 1; i > 0; i--) { s = (Math.imul(s, 1103515245) + 12345) >>> 0; const j = s % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function eff(p) { // effective position (players from an older round sit at the start)
+  if (!p || p.round !== S.round) return { main: 0, detour: 0, finishedAt: null };
+  return { main: Math.min(p.main || 0, S.mainLen), detour: p.detour || 0, finishedAt: p.finishedAt || null };
+}
+function remaining(p) { const e = eff(p); return (S.mainLen - e.main) + e.detour; }
+function ranked() {
+  return [...players.values()].sort((a, b) => {
+    const ea = eff(a), eb = eff(b);
+    if (ea.finishedAt && eb.finishedAt) return ea.finishedAt - eb.finishedAt;
+    if (ea.finishedAt) return -1; if (eb.finishedAt) return 1;
+    return remaining(a) - remaining(b) || (a.joinedAt || 0) - (b.joinedAt || 0);
+  });
+}
+function countdownLeft() { return S.status === "playing" ? Math.ceil((S.startedAt - Date.now()) / 1000) : 0; }
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); }
+async function writeState(changes) {
+  try { await api("state", { pin: PIN, state: { ...DEFAULTS, ...S, ...changes, updatedAt: Date.now() } }); }
+  catch (e) { toast("Non riesco a salvare: controlla il PIN della regia."); }
+}
+
+// ---------- server (Google Apps Script) ----------
+async function api(action, data) {
+  const r = await fetch(API, { method: "POST", body: JSON.stringify({ action, ...data }) });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  applySnap(j); return j;
+}
+let pulling = false;
+async function pull() {
+  if (pulling) return; pulling = true;
+  try { const r = await fetch(API + (API.includes("?") ? "&" : "?") + "t=" + Date.now()); applySnap(await r.json()); connNote = ""; }
+  catch (e) { if (!stateLoaded) { connNote = "Non riesco a raggiungere la base. Controlla la rete: la pagina riprova da sola."; render(); } }
+  finally { pulling = false; }
+}
+function applySnap(j) {
+  if (!j || !j.state) return;
+  S = { ...DEFAULTS, ...j.state }; stateLoaded = true;
+  Q = (j.questions || []).filter(q => q && q.q && Array.isArray(q.a) && q.a.length >= 2); qLoaded = true;
+  players = new Map((j.players || []).map(p => [p.id, p])); playersLoaded = true;
+  if (uid && !local && players.has(uid)) local = { ...players.get(uid) };
+  if (uid && local && !players.has(uid) && Date.now() - lastSave > 6000 && !busy) local = null; // rimosso dalla regia
+  render();
+}
+function newId() { return "p" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+
+// ---------- boot ----------
+async function boot() {
+  if (!API) { connNote = "noapi"; render(); return; }
+  try { uid = localStorage.getItem("ml_uid"); } catch {}
+  if (!uid) { uid = newId(); try { localStorage.setItem("ml_uid", uid); } catch {} }
+  try { PIN = localStorage.getItem("ml_pin") || ""; } catch {}
+  render();
+  await pull();
+  await checkEditor();
+  setInterval(() => pull(), route() === "play" ? 2500 : 1500);
+  setInterval(tick, 250);
+  try { await navigator.wakeLock?.request("screen"); } catch {}
+}
+async function checkEditor() {
+  if (route() === "play") { isEditor = false; return; }
+  if (!PIN) { PIN = (prompt("PIN della regia") || "").trim(); }
+  try {
+    const r = await fetch(API, { method: "POST", body: JSON.stringify({ action: "check", pin: PIN }) }); const j = await r.json();
+    isEditor = !!j.ok;
+    if (isEditor) { try { localStorage.setItem("ml_pin", PIN); } catch {} }
+    else { PIN = ""; try { localStorage.removeItem("ml_pin"); } catch {} toast("PIN sbagliato: ricarica la pagina per riprovare"); }
+  } catch { isEditor = false; }
+  screenKey = ""; render();
+}
+window.addEventListener("hashchange", () => { screenKey = ""; if (API && route() !== "play" && !isEditor) checkEditor(); render(); });
+
+let lastTickSec = null;
+function tick() {
+  const c = countdownLeft();
+  const pen = Math.max(0, Math.ceil((penaltyUntil - Date.now()) / 1000));
+  const sig = c + "|" + pen;
+  if (sig !== lastTickSec) { lastTickSec = sig; render(); }
+}
+
+// ---------- render dispatcher ----------
+function render() {
+  const v = route();
+  if (connNote === "noapi") return setScreen("noapi", () => `<div class="phone"><div class="card center stack"><h2>Missione Luxia</h2><p class="muted">Manca il collegamento alla base: inserisci il link dello script Google in config.js.</p></div></div>`);
+  if (connNote === "nodb") return setScreen("nodb", () => `<div class="phone"><div class="card center stack">
+      <div class="astro-hero">${astro("#FFC857")}</div>
+      <h2>Missione Luxia</h2>
+      <p class="muted">Per salire a bordo apri questo link con il tuo account Claude di Luxia (accedi a claude.ai dal telefono, poi riapri il QR code).</p></div></div>`);
+  if (v === "host") return renderHost();
+  if (v === "admin") return renderAdmin();
+  return renderPlayer();
+}
+function setScreen(key, html, after) {
+  if (key !== screenKey) { screenKey = key; $app.innerHTML = html(); after && after(); return true; }
+  return false;
+}
+function editNav() {
+  if (!isEditor) return "";
+  return `<nav class="editnav" aria-label="Regia"><a href="#play">Gioca</a><a href="#host">Proiettore</a><a href="#admin">Domande</a></nav>`;
+}
+
+// ---------- PLAYER ----------
+function myScreen() {
+  if (!stateLoaded || !playersLoaded) return "loading";
+  if (S.status === "finished") return local ? "over" : "join";
+  if (!local) return "join";
+  if (local.round !== S.round) return "resetting";
+  if (S.status === "lobby") return "lobby";
+  if (countdownLeft() > 0) return "countdown";
+  if (local.finishedAt) return "landed";
+  return "play";
+}
+async function saveLocal(p) {
+  local = p;
+  lastSave = Date.now();
+  try { await api("player", { id: uid, p: { ...p, updatedAt: Date.now() } }); lastSave = Date.now(); }
+  catch (e) { toast("Salvataggio non riuscito, riprovo alla prossima risposta."); }
+}
+function renderPlayer() {
+  const scr = myScreen();
+  if (scr === "resetting" && resetDoneRound !== S.round) {
+    resetDoneRound = S.round;
+    saveLocal({ ...local, round: S.round, main: 0, detour: 0, qi: 0, correct: 0, wrong: 0, finishedAt: null });
+  }
+  const head = `<div class="brand"><div class="logo">MISSIONE <b>LUXIA</b></div>${editNav()}</div>`;
+
+  if (scr === "loading") return setScreen("p-load", () => `<div class="phone">${head}<div class="card center stack"><div class="astro-hero">${astro("#6EE7F9")}</div><p class="muted">Contatto la base…</p>${connNote ? `<p class="muted">${esc(connNote)}</p>` : ""}</div></div>`);
+
+  if (scr === "join") {
+    const fresh = setScreen("p-join", () => `<div class="phone">${head}
+      <div class="card stack">
+        <div class="eyebrow">Imbarco equipaggio</div>
+        <h2>Scegli il tuo nome da astronauta</h2>
+        <div class="astro-hero" id="jprev">${astro(joinColor)}</div>
+        <label class="label" for="jname">Nome (max 14 caratteri)</label>
+        <input type="text" id="jname" maxlength="14" autocomplete="off" placeholder="es. Capitana Marghe">
+        <div class="label">Colore della tuta</div>
+        <div class="swatches" id="jsw">${COLORS.map(c => `<button class="sw" style="background:${c}" data-c="${c}" aria-label="Colore ${c}" aria-pressed="${c === joinColor}"></button>`).join("")}</div>
+        <button class="btn" id="jgo">Sali a bordo</button>
+        <p class="muted center" id="jcount"></p>
+      </div></div>`, () => {
+        const jn = document.getElementById("jname");
+        document.getElementById("jsw").addEventListener("click", e => {
+          const b = e.target.closest(".sw"); if (!b) return; joinColor = b.dataset.c;
+          document.querySelectorAll(".sw").forEach(s => s.setAttribute("aria-pressed", s.dataset.c === joinColor));
+          document.getElementById("jprev").innerHTML = astro(joinColor);
+        });
+        const go = async () => {
+          const name = jn.value.trim().slice(0, 14);
+          if (!name) { jn.focus(); toast("Scrivi un nome per entrare"); return; }
+          document.getElementById("jgo").disabled = true;
+          await saveLocal({ name, color: joinColor, round: S.round, main: 0, detour: 0, qi: 0, correct: 0, wrong: 0, finishedAt: null, joinedAt: Date.now() });
+          screenKey = ""; render();
+        };
+        document.getElementById("jgo").onclick = go;
+        jn.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+      });
+    const jc = document.getElementById("jcount");
+    if (jc) jc.textContent = S.status === "finished" ? "La missione è conclusa. Aspetta la prossima partenza." : `${players.size} astronauti già a bordo` + (S.status === "playing" ? " · la gara è in corso, partirai dal via" : "");
+    return;
+  }
+
+  const p = local;
+  const statusBar = () => {
+    const e = eff(p), pct = Math.round(e.main / S.mainLen * 100);
+    const pill = e.finishedAt ? `<span class="pill done">ATTERRATO</span>` : e.detour ? `<span class="pill detour">DEVIAZIONE · ${e.detour}</span>` : `<span class="pill main">IN ROTTA</span>`;
+    return `<div class="card stack" style="padding:16px">
+      <div class="status"><div class="who">${astro(p.color, "mini")}<span>${esc(p.name)}</span></div>${pill}</div>
+      <div class="track" aria-label="Avanzamento"><i style="width:${pct}%"></i></div>
+      <div class="row between"><span class="label">Casella <span class="mono">${e.main}/${S.mainLen}</span></span><span class="label">Mancano <span class="mono">${remaining(p)}</span> risposte giuste</span></div>
+    </div>`;
+  };
+
+  if (scr === "lobby" || scr === "resetting") {
+    setScreen("p-lobby", () => `<div class="phone">${head}<div class="card center stack">
+        <div class="astro-hero">${astro(p.color)}</div>
+        <div class="eyebrow">Sei a bordo</div><h2>Ciao ${esc(p.name)}</h2>
+        <p class="muted">Guarda lo schermo grande: la missione parte quando tutto l'equipaggio è pronto.</p>
+        <p class="count" id="lcount"></p></div></div>`);
+    const lc = document.getElementById("lcount"); if (lc) lc.innerHTML = `<b>${players.size}</b> astronauti a bordo`;
+    return;
+  }
+  if (scr === "countdown") {
+    setScreen("p-cd", () => `<div class="phone">${head}<div class="card center stack"><div class="eyebrow">Conto alla rovescia</div><div class="big-count mono" id="cd"></div><p class="muted">Tieni il telefono in mano: appena parte arriva la prima domanda.</p></div></div>`);
+    const cd = document.getElementById("cd"); if (cd) cd.textContent = countdownLeft();
+    return;
+  }
+  if (scr === "landed") {
+    const rank = ranked().findIndex(x => x.id === uid) + 1;
+    setScreen("p-landed-" + rank, () => `<div class="phone">${head}${statusBar()}<div class="card center stack">
+      <div class="astro-hero">${astro(p.color)}</div><div class="eyebrow">Atterraggio completato</div>
+      <h2>Sei arrivato su Luxia${rank ? ` · ${rank}° posto` : ""}</h2>
+      <p class="muted">${p.correct} risposte giuste, ${p.wrong} deviazioni. Goditi l'arrivo degli altri sullo schermo.</p></div></div>`);
+    return;
+  }
+  if (scr === "over") {
+    const rank = ranked().findIndex(x => x.id === uid) + 1;
+    setScreen("p-over-" + rank, () => `<div class="phone">${head}<div class="card center stack">
+      <div class="astro-hero">${astro(p.color)}</div><div class="eyebrow">Missione conclusa</div>
+      <h2>${rank ? `Classifica finale: ${rank}°` : "Missione conclusa"}</h2>
+      <p class="muted">Guarda il podio sullo schermo grande.</p></div></div>`);
+    return;
+  }
+
+  // play
+  if (!Q.length) { setScreen("p-noq", () => `<div class="phone">${head}<div class="card center stack"><h2>Nessuna domanda caricata</h2><p class="muted">La regia deve aggiungere le domande dalla pagina Domande.</p></div></div>`); return; }
+  const order = shuffled(Q.length, hash((uid || "x") + ":" + S.round));
+  const q = Q[order[p.qi % Q.length]];
+  const pen = Math.max(0, Math.ceil((penaltyUntil - Date.now()) / 1000));
+  const key = `p-play-${p.qi}-${phase}-${pen}-${Q.length}-${p.detour}`;
+  if (key === screenKey) return;
+  screenKey = key;
+  const letters = "AB";
+  let fb = "";
+  if (phase === "fb") {
+    fb = lastOk
+      ? `<div class="fb ok">Risposta giusta! ${eff(p).detour ? "Ti avvicini alla rotta principale." : "Avanzi di una casella."}</div>`
+      : `<div class="fb ko">Sbagliato: deviazione nella fascia di asteroidi. ${pen ? `Riparti tra <span class="mono">${pen}</span>s` : ""}</div>`;
+  }
+  const qq = phase === "fb" ? (prevQ || q) : q;
+  $app.innerHTML = `<div class="phone">${head}${statusBar()}
+    <div class="card stack">
+      <div class="eyebrow">Domanda ${p.qi + (phase === "fb" ? 0 : 1)}</div>
+      <div class="question">${esc(qq.q)}</div>
+      <div class="answers">${qq.a.map((a, i) => {
+        let cls = "";
+        if (phase === "fb") { if (i === qq.c) cls = "right"; else if (i === lastPick) cls = "wrong"; }
+        return `<button class="ans ${cls}" data-i="${i}" ${phase === "fb" ? "disabled" : ""}><span class="k">${letters[i] || i + 1}</span><span>${esc(a)}</span></button>`;
+      }).join("")}</div>
+      ${fb}
+    </div></div>`;
+  if (phase === "q") document.querySelectorAll(".ans").forEach(b => b.onclick = () => answer(+b.dataset.i, q));
+}
+let prevQ = null;
+async function answer(i, q) {
+  if (busy || phase !== "q") return;
+  busy = true; prevQ = q; lastPick = i; lastOk = i === q.c;
+  const p = { ...local, qi: (local.qi || 0) + 1 };
+  if (lastOk) {
+    p.correct = (p.correct || 0) + 1;
+    if (p.detour > 0) p.detour--; else p.main = Math.min(S.mainLen, (p.main || 0) + 1);
+    if (p.main >= S.mainLen && !p.finishedAt) p.finishedAt = Date.now();
+  } else {
+    p.wrong = (p.wrong || 0) + 1;
+    if (!p.detour) p.detour = S.detourLen;
+  }
+  phase = "fb";
+  const wait = lastOk ? 1100 : Math.max(1200, (S.penaltySec || 0) * 1000);
+  penaltyUntil = lastOk ? 0 : Date.now() + wait;
+  local = p; // show the new position right away
+  render();
+  await saveLocal(p);
+  setTimeout(() => { phase = "q"; busy = false; penaltyUntil = 0; render(); }, Math.max(0, wait - 50));
+}
+
+// ---------- HOST ----------
+let boardKey = "", nodes = [], loopC = [];
+function renderHost() {
+  if (!stateLoaded) return setScreen("h-load", () => `<div class="podium"><h1>Contatto la base…</h1>${connNote ? `<p class="muted">${esc(connNote)}</p>` : ""}</div>`);
+  if (S.status === "lobby") return renderLobby();
+  if (S.status === "finished") return renderPodium();
+  renderRace();
+}
+function makeQR(el, size) {
+  if (!el) return;
+  if (!JOIN_URL || !window.QRCode) { el.innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#333;font:600 14px var(--f-body);text-align:center">QR code in arrivo</div>`; return; }
+  el.innerHTML = ""; new QRCode(el, { text: JOIN_URL, width: size, height: size, colorDark: "#060918", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+}
+function ownerCtrls() {
+  if (!isEditor) return "";
+  if (S.status === "lobby") return `<div class="ctrls"><button class="btn" id="c-start">Lancia la missione</button><button class="btn ghost sm" id="c-clear">Svuota equipaggio</button><a class="btn ghost sm" href="#admin">Domande</a></div>`;
+  if (S.status === "playing") return `<div class="ctrls"><button class="btn sm" id="c-end">Chiudi e mostra il podio</button><button class="btn ghost sm" id="c-reset">Riporta tutti al via</button></div>`;
+  return `<div class="ctrls"><button class="btn sm" id="c-reset">Nuova partita, stesso equipaggio</button><button class="btn ghost sm" id="c-clear">Svuota equipaggio</button><a class="btn ghost sm" href="#admin">Domande</a></div>`;
+}
+function wireCtrls() {
+  const on = (id, fn) => { const b = document.getElementById(id); if (b) b.onclick = fn; };
+  on("c-start", () => { if (!players.size) return toast("Aspetta che salga almeno un astronauta"); if (!Q.length) return toast("Aggiungi prima le domande"); writeState({ status: "playing", startedAt: Date.now() + 5500 }); });
+  on("c-end", () => writeState({ status: "finished" }));
+  on("c-reset", () => writeState({ status: "lobby", round: (S.round || 1) + 1, startedAt: 0 }));
+  on("c-clear", async (e) => {
+    const b = e.currentTarget;
+    if (!b.dataset.arm) { b.dataset.arm = "1"; b.textContent = "Conferma: rimuovi tutti"; b.classList.add("danger"); setTimeout(() => { b.dataset.arm = ""; b.textContent = "Svuota equipaggio"; b.classList.remove("danger"); }, 4000); return; }
+    try { await api("clear", { pin: PIN }); } catch {}
+    await writeState({ status: "lobby", round: (S.round || 1) + 1, startedAt: 0 });
+    toast("Equipaggio svuotato");
+  });
+}
+function renderLobby() {
+  setScreen("h-lobby-" + isEditor, () => `<div class="lobby">
+      <div><div class="qr-big qr" id="qr"></div><div class="url">${esc(JOIN_URL)}</div></div>
+      <div style="min-width:0">
+        <div class="eyebrow">Strategy Day · Imbarco aperto</div>
+        <h1>Missione<br><b>Luxia</b></h1>
+        <p class="muted" style="max-width:56ch;font-size:18px;margin:14px 0 0">Inquadra il QR code, scegli il tuo nome e il colore della tuta. Ogni risposta giusta ti avvicina a Luxia; una sbagliata ti manda nella fascia di asteroidi e allunga la rotta.</p>
+        <div class="count" id="lc"></div>
+        <div class="joined" id="joined"></div>
+        <div style="margin-top:22px">${ownerCtrls()}</div>
+      </div></div>`, () => { makeQR(document.getElementById("qr"), 360); wireCtrls(); });
+  const list = [...players.values()].sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  document.getElementById("lc").innerHTML = list.length ? `<b>${list.length}</b> astronauti a bordo` : `In attesa del primo astronauta…`;
+  const j = document.getElementById("joined");
+  const have = new Set([...j.children].map(c => c.dataset.id));
+  list.forEach(p => { if (!have.has(p.id)) { const d = document.createElement("div"); d.className = "j"; d.dataset.id = p.id; d.innerHTML = astro(p.color) + `<span>${esc(p.name)}</span>`; j.appendChild(d); } });
+  [...j.children].forEach(c => { if (!players.has(c.dataset.id)) c.remove(); });
+}
+function renderPodium() {
+  const r = ranked().slice(0, 3);
+  const sig = "h-pod-" + isEditor + r.map(p => p.id).join(",");
+  setScreen(sig, () => {
+    const place = (p, n) => p ? `<div class="step p${n}">${astro(p.color)}<div class="nm">${esc(p.name)}</div><div class="blk">${n}</div></div>` : "";
+    return `<div class="podium"><div class="eyebrow">Missione conclusa</div><h1>Il podio di Luxia</h1>
+      <div class="steps">${place(r[1], 2)}${place(r[0], 1)}${place(r[2], 3)}</div>
+      ${r.length ? "" : `<p class="muted">Nessun astronauta in gara.</p>`}
+      ${ownerCtrls()}</div>`;
+  }, wireCtrls);
+}
+function renderRace() {
+  setScreen("h-race-" + isEditor, () => `<div class="host">
+      <div class="host-main">
+        <div class="host-top"><div><div class="eyebrow">Strategy Day · Gara in corso</div><h1>Missione <b>Luxia</b></h1></div>${ownerCtrls()}</div>
+        <div class="board" id="board"></div>
+        <div id="ov"></div>
+      </div>
+      <aside class="side"><h2>Equipaggio <span class="mono muted" id="ncrew"></span></h2><ol class="crew" id="crew"></ol>
+        <div class="qr-mini"><div class="qr" id="qrm"></div><span>In ritardo? Inquadra e parti dal via.</span></div></aside>
+    </div>`, () => { boardKey = ""; makeQR(document.getElementById("qrm"), 160); wireCtrls(); });
+  buildBoard(); placePlayers(); renderCrew();
+  const ov = document.getElementById("ov"), c = countdownLeft();
+  const first = ranked().find(p => eff(p).finishedAt);
+  ov.innerHTML = c > 0 ? `<div class="overlay"><div><div class="eyebrow">Conto alla rovescia</div><div class="big-count mono">${c}</div></div></div>`
+    : first ? `<div class="banner">${esc(first.name)} è atterrato per primo su Luxia</div>` : "";
+}
+function buildBoard() {
+  const key = S.mainLen + ":" + S.detourLen;
+  const wrap = document.getElementById("board");
+  if (boardKey === key && wrap.firstChild) return;
+  boardKey = key;
+  const d = "M 230 210 L 1360 210 A 135 135 0 0 1 1360 480 L 330 480 A 135 135 0 0 0 330 750 L 1380 750";
+  wrap.innerHTML = `<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Percorso della gara">
+    <defs>
+      <radialGradient id="planet" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFF1C9"/><stop offset=".45" stop-color="#FFC857"/><stop offset="1" stop-color="#B9621E"/></radialGradient>
+      <radialGradient id="glow"><stop offset="0" stop-color="#FFC857" stop-opacity=".55"/><stop offset="1" stop-color="#FFC857" stop-opacity="0"/></radialGradient>
+      <radialGradient id="node" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3B4BA0"/><stop offset="1" stop-color="#151C47"/></radialGradient>
+    </defs>
+    <path id="route" d="${d}" fill="none" stroke="#6EE7F9" stroke-opacity=".12" stroke-width="34" stroke-linecap="round"/>
+    <path d="${d}" fill="none" stroke="#6EE7F9" stroke-opacity=".7" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round"/>
+    <g id="loops"></g><g id="nodes"></g><g id="pls"></g>
+  </svg>`;
+  const path = wrap.querySelector("#route"), L = path.getTotalLength(), N = S.mainLen;
+  nodes = []; loopC = [];
+  for (let k = 0; k <= N; k++) { const pt = path.getPointAtLength(L * k / N); nodes.push({ x: pt.x, y: pt.y }); }
+  const gL = wrap.querySelector("#loops"), gN = wrap.querySelector("#nodes");
+  let loopsHtml = "", nodesHtml = "";
+  const DL = S.detourLen, R = Math.max(34, Math.min(50, 16 + DL * 9));
+  nodes.forEach((n, k) => {
+    if (k < N) {
+      const dx = (k % 2 ? 1 : -1) * 46; const c = { x: n.x + dx, y: n.y - (R + 100) }; loopC.push(c);
+      loopsHtml += `<path d="M ${n.x} ${n.y - 24} Q ${n.x} ${c.y + R + 40} ${c.x} ${c.y + R}" fill="none" stroke="#FF6B6B" stroke-opacity=".4" stroke-width="2" stroke-dasharray="3 6"/>
+        <circle id="loop-${k}" cx="${c.x}" cy="${c.y}" r="${R}" fill="none" stroke="#FF6B6B" stroke-opacity=".28" stroke-width="2" stroke-dasharray="4 6"/>`;
+      for (let s = 0; s < DL; s++) { const p = loopPt(k, s); loopsHtml += `<circle cx="${p.x}" cy="${p.y}" r="${3 + (s % 2)}" fill="#8A7A9E" opacity=".7"/>`; }
+    }
+    if (k === 0) nodesHtml += `<ellipse cx="${n.x}" cy="${n.y + 22}" rx="70" ry="16" fill="#6EE7F9" opacity=".18"/><circle cx="${n.x}" cy="${n.y}" r="34" fill="url(#node)" stroke="#6EE7F9" stroke-width="2"/>
+        <text x="${n.x}" y="${n.y + 72}" text-anchor="middle" fill="#6EE7F9" font-family="JetBrains Mono, monospace" font-size="18" letter-spacing="3">PARTENZA</text>`;
+    else if (k === N) nodesHtml += `<circle cx="${n.x + 40}" cy="${n.y}" r="170" fill="url(#glow)"/><circle cx="${n.x + 40}" cy="${n.y}" r="74" fill="url(#planet)"/>
+        <ellipse cx="${n.x + 40}" cy="${n.y}" rx="118" ry="22" fill="none" stroke="#FFE3A3" stroke-width="4" opacity=".7" transform="rotate(-14 ${n.x + 40} ${n.y})"/>
+        <text x="${n.x + 40}" y="${n.y + 118}" text-anchor="middle" fill="#FFC857" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="30" letter-spacing="6">LUXIA</text>`;
+    else nodesHtml += `<circle cx="${n.x}" cy="${n.y}" r="24" fill="url(#node)" stroke="#2E3A7A" stroke-width="2"/>
+        <text x="${n.x}" y="${n.y + 6}" text-anchor="middle" fill="#9AA3D1" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">${k}</text>`;
+  });
+  gL.innerHTML = loopsHtml; gN.innerHTML = nodesHtml;
+}
+function loopPt(k, s) {
+  const c = loopC[k], DL = S.detourLen, R = Math.max(34, Math.min(50, 16 + DL * 9));
+  const a = Math.PI / 2 + (s + 1) * 2 * Math.PI / (DL + 1);
+  return { x: c.x + R * Math.cos(a), y: c.y + R * Math.sin(a) };
+}
+function placePlayers() {
+  const g = document.querySelector("#pls"); if (!g) return;
+  const groups = new Map();
+  for (const p of players.values()) {
+    const e = eff(p);
+    const k = e.detour ? `d${Math.min(e.main, S.mainLen - 1)}:${S.detourLen - e.detour}` : `m${e.main}`;
+    if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p);
+  }
+  const seen = new Set();
+  for (const [k, list] of groups) {
+    let base;
+    if (k[0] === "m") { const n = nodes[+k.slice(1)]; base = { x: n.x + (+k.slice(1) === S.mainLen ? 40 : 0), y: n.y - (+k.slice(1) === S.mainLen ? 70 : 0) }; }
+    else { const [m, s] = k.slice(1).split(":").map(Number); base = loopPt(m, s); const lc = document.getElementById("loop-" + m); if (lc) { lc.setAttribute("stroke-opacity", ".9"); } }
+    list.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+    const showName = list.length <= 3;
+    list.forEach((p, i) => {
+      seen.add(p.id);
+      const r = i ? 24 * Math.sqrt(i) : 0, a = i * 2.4;
+      const x = base.x + r * Math.cos(a) - 24, y = base.y + r * Math.sin(a) - 46;
+      let el = g.querySelector(`[data-id="${CSS.escape(p.id)}"]`);
+      if (!el) {
+        el = document.createElementNS(NS, "g"); el.setAttribute("class", "pl"); el.dataset.id = p.id;
+        el.style.transform = `translate(${nodes[0].x - 24}px, ${nodes[0].y - 46}px)`;
+        g.appendChild(el);
+      }
+      const sig = p.color + "|" + p.name + "|" + showName;
+      if (el.dataset.sig !== sig) {
+        el.dataset.sig = sig;
+        el.innerHTML = `<g class="bob" style="animation-delay:${-(hash(p.id) % 3000)}ms"><svg width="48" height="57" viewBox="0 0 64 76">${astro(p.color).replace(/^<svg[^>]*>|<\/svg>\s*$/g, "")}</svg>
+          ${showName ? `<text x="24" y="72" text-anchor="middle" fill="#EEF1FF" font-family="Manrope, sans-serif" font-weight="800" font-size="15" paint-order="stroke" stroke="#060918" stroke-width="4">${esc(p.name.slice(0, 12))}</text>` : ""}</g>`;
+      }
+      requestAnimationFrame(() => { el.style.transform = `translate(${x}px, ${y}px)`; });
+    });
+  }
+  g.querySelectorAll(".pl").forEach(el => { if (!seen.has(el.dataset.id)) el.remove(); });
+  // reset loop highlight for empty loops
+  document.querySelectorAll('[id^="loop-"]').forEach(lc => {
+    const m = +lc.id.slice(5);
+    const busyLoop = [...groups.keys()].some(k => k[0] === "d" && +k.slice(1).split(":")[0] === m);
+    lc.setAttribute("stroke-opacity", busyLoop ? ".9" : ".28");
+  });
+}
+function renderCrew() {
+  const r = ranked();
+  const n = document.getElementById("ncrew"); if (n) n.textContent = r.length;
+  const ol = document.getElementById("crew"); if (!ol) return;
+  ol.innerHTML = r.map((p, i) => {
+    const e = eff(p);
+    const st = e.finishedAt ? `<span class="pill done">ARRIVATO</span>` : e.detour ? `<span class="pill detour">+${e.detour}</span>` : `<span class="pr">${e.main}/${S.mainLen}</span>`;
+    return `<li><span class="rk">${i + 1}</span>${astro(p.color, "mini")}<span class="nm">${esc(p.name)}</span>${st}</li>`;
+  }).join("") || `<li style="grid-template-columns:1fr"><span class="muted">Nessuno a bordo</span></li>`;
+}
+
+// ---------- ADMIN ----------
+function renderAdmin() {
+  if (!stateLoaded || !qLoaded) return setScreen("a-load", () => `<div class="admin"><h1>Carico le domande…</h1></div>`);
+  if (!isEditor) return setScreen("a-no", () => `<div class="admin"><div class="eyebrow">Regia</div><h1>Solo la regia può modificare le domande</h1><p class="muted">Torna al <a href="#play" style="color:var(--ion)">gioco</a>.</p></div>`);
+  if (!draft) draft = JSON.parse(JSON.stringify(Q.length ? Q : [{ q: "", a: ["", ""], c: 0 }]));
+  setScreen("a-main", () => `<div class="admin">
+      <div class="row between"><div><div class="eyebrow">Regia · Missione Luxia</div><h1>Domande e regole</h1></div>${editNav()}</div>
+      <div class="card stack">
+        <h3>Regole del percorso</h3>
+        <div class="settings">
+          <div class="stack" style="gap:6px"><label class="label" for="s-main">Caselle fino a Luxia</label><input type="number" id="s-main" min="4" max="30" value="${S.mainLen}"></div>
+          <div class="stack" style="gap:6px"><label class="label" for="s-det">Caselle della deviazione</label><input type="number" id="s-det" min="1" max="6" value="${S.detourLen}"></div>
+          <div class="stack" style="gap:6px"><label class="label" for="s-pen">Secondi di attesa dopo un errore</label><input type="number" id="s-pen" min="0" max="15" value="${S.penaltySec}"></div>
+        </div>
+        <p class="muted" style="margin:0">Ogni risposta giusta vale una casella. Una risposta sbagliata manda l'astronauta in deviazione: deve rispondere bene ad altre ${"<span id='detn'>" + S.detourLen + "</span>"} domande prima di tornare in rotta.</p>
+        <div><button class="btn sm" id="s-save">Salva regole</button></div>
+      </div>
+      <div class="row between"><h3 id="qcount"></h3><div class="row"><button class="btn ghost sm" id="q-add">Aggiungi domanda</button><button class="btn sm" id="q-save">Salva domande</button></div></div>
+      <div class="stack" id="qlist"></div>
+      <details class="card"><summary style="cursor:pointer;font-weight:800">Importa o esporta in blocco (JSON)</summary>
+        <div class="stack" style="margin-top:12px"><p class="muted" style="margin:0">Formato: una lista di oggetti con <span class="mono">q</span> (domanda), <span class="mono">a</span> (2 risposte) e <span class="mono">c</span> (indice della risposta giusta, 0 o 1).</p>
+        <textarea id="json" rows="10" class="mono" style="font-size:13px"></textarea>
+        <div class="row"><button class="btn ghost sm" id="j-exp">Mostra domande attuali</button><button class="btn sm" id="j-imp">Sostituisci con questo JSON</button></div></div></details>
+    </div>`, () => {
+      drawQList();
+      document.getElementById("s-save").onclick = async () => {
+        const v = (id, lo, hi, def) => Math.max(lo, Math.min(hi, parseInt(document.getElementById(id).value, 10) || def));
+        await writeState({ mainLen: v("s-main", 4, 30, 12), detourLen: v("s-det", 1, 6, 3), penaltySec: v("s-pen", 0, 15, 3) });
+        toast("Regole salvate");
+      };
+      document.getElementById("q-add").onclick = () => { syncDraft(); draft.push({ q: "", a: ["", ""], c: 0 }); drawQList(); };
+      document.getElementById("q-save").onclick = saveQuestions;
+      document.getElementById("j-exp").onclick = () => { syncDraft(); document.getElementById("json").value = JSON.stringify(draft, null, 2); };
+      document.getElementById("j-imp").onclick = () => {
+        try {
+          const arr = JSON.parse(document.getElementById("json").value);
+          if (!Array.isArray(arr)) throw 0;
+          draft = arr.map(x => ({ q: String(x.q || ""), a: [0, 1].map(i => String((x.a || [])[i] || "")), c: Math.max(0, Math.min(1, +x.c || 0)) }));
+          drawQList(); toast(`${draft.length} domande pronte: premi Salva domande`);
+        } catch { toast("JSON non valido: controlla virgole e parentesi"); }
+      };
+    });
+}
+function drawQList() {
+  const el = document.getElementById("qlist");
+  document.getElementById("qcount").textContent = `${draft.length} domande`;
+  el.innerHTML = draft.map((q, n) => `<div class="card qedit" data-n="${n}">
+      <div class="row between"><span class="eyebrow">Domanda ${n + 1}</span><button class="btn danger sm" data-del="${n}">Elimina</button></div>
+      <textarea id="q-${n}-t" rows="2" placeholder="Testo della domanda">${esc(q.q)}</textarea>
+      <div class="opts">${[0, 1].map(i => `<label class="opt"><input type="radio" name="c-${n}" id="q-${n}-c${i}" value="${i}" ${q.c === i ? "checked" : ""} aria-label="Risposta giusta ${i + 1}">
+        <input type="text" id="q-${n}-a${i}" value="${esc(q.a[i] || "")}" placeholder="Risposta ${"ABCD"[i]}"></label>`).join("")}</div>
+      <span class="label">Seleziona il pallino accanto alla risposta giusta.</span>
+    </div>`).join("");
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { syncDraft(); draft.splice(+b.dataset.del, 1); drawQList(); });
+}
+function syncDraft() {
+  draft = draft.map((q, n) => {
+    const t = document.getElementById(`q-${n}-t`); if (!t) return q;
+    const a = [0, 1].map(i => document.getElementById(`q-${n}-a${i}`).value.trim());
+    const ci = [0, 1].find(i => document.getElementById(`q-${n}-c${i}`).checked) ?? 0;
+    return { q: t.value.trim(), a, c: ci };
+  });
+}
+async function saveQuestions() {
+  syncDraft();
+  const clean = draft.map(q => {
+    const a = q.a.filter(x => x); const right = q.a[q.c];
+    return { q: q.q, a, c: Math.max(0, a.indexOf(right)) };
+  }).filter(q => q.q && q.a.length >= 2);
+  try { await api("questions", { pin: PIN, list: clean }); toast(`${clean.length} domande salvate`); draft = JSON.parse(JSON.stringify(clean)); drawQList(); }
+  catch { toast("Non riesco a salvare: serve il permesso da editor."); }
+}
+
+boot();
+</script>
+
+</body></html>
